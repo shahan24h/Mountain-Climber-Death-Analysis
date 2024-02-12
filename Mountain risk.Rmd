@@ -1,0 +1,127 @@
+---
+title: "Untitled"
+author: "Shahan Ahmed"
+date: "2024-02-11"
+output: word_document
+---
+#Libraries:
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(viridis)
+library(readr)
+library(GGally)
+library(survival)
+```
+#Set working directory
+```{r}
+setwd("S:/Portfolio Project")
+```
+
+#Importing dataset and cleaning
+```{r}
+Mountain_deaths <- read_csv("deaths_on_eight-thousanders.csv")
+
+Mountain_deaths_clean <- na.omit(Mountain_deaths)
+
+glimpse(Mountain_deaths_clean)
+```
+
+
+#Question:How has the number of climbing accidents changeed over the year? 
+
+```{r}
+accidents_by_year <- Mountain_deaths_clean %>%
+  group_by(Date) %>%
+  summarise(Count = n())
+
+
+
+ggplot(accidents_by_year, aes(x = Date, y = Count)) +
+  geom_line() +
+  geom_point() +
+  scale_x_date(date_breaks = "20 year", date_labels = "%Y") +  # Adjust intervals and labels
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Improve readability of x-axis labels
+  labs(title = "Trend of Climbing Accidents Over the Years", x = "Year", y = "Number of Accidents")
+
+```
+
+#Question: What are the top five reasones for climbers death? 
+
+```{r}
+accidents_by_cause <- Mountain_deaths_clean %>%
+  group_by(`Cause of death`) %>%
+  summarise(Count = n())
+
+#Filter for top 5 causes
+top_accidents_by_cause <- accidents_by_cause %>%
+  arrange(desc(Count)) %>%
+  top_n(5, Count)
+
+ggplot(top_accidents_by_cause, aes(x = reorder(`Cause of death`, Count), y = Count, fill = `Cause of death`)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 16, face = "bold"),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        plot.margin = margin(10, 10, 10, 10)) +
+  labs(title = "Top Five Climbing Accidents by Cause of Death",
+       x = "Cause of Death",
+       y = "Number of Accidents")
+
+```
+
+
+#Can we identify any correlations between climber nationality and the causes of death?
+
+
+```{r}
+Mountain_deaths_clean %>%
+  group_by(Nationality) %>%
+  summarise(Count = n()) %>%
+  arrange(-Count) %>%
+  head(n = 20)
+
+top_nationalities_10 <- Mountain_deaths_clean %>%
+  group_by(Nationality) %>%
+  summarise(Count = n()) %>%
+  arrange(-Count) %>%
+  head(n = 10)
+
+ggplot(top_nationalities_10, aes(x = reorder(Nationality, -Count), y = Count)) +
+  geom_segment(aes(x = Nationality, xend = Nationality, y = 0, yend = Count), color = "grey") +
+  geom_point(color = "steelblue", size = 5) +
+  theme_minimal() +
+  labs(title = "Top 10 Nationalities in Mountain Deaths",
+       x = "Nationality", 
+       y = "Count of Deaths") +
+  coord_flip()
+```
+
+```{r}
+# Create a contingency table and Chiq test
+
+Death_by_Nationality <- table(Mountain_deaths_clean$Nationality, Mountain_deaths_clean$`Cause of death`)
+Death_by_Nationality <- chisq.test(Death_by_Nationality)
+print(Death_by_Nationality)
+```
+Implementing Monte Carlo Simulation:
+This approach helps mitigate the issue with low expected counts in some cells of your contingency table and provides a more reliable p-value through simulation, especially suitable for large contingency tables with many degrees of freedom.
+
+# Monte Carlo Simulation
+```{r}
+if(any(chi_res$expected < 5)) 
+chi_res_mc <- chisq.test(Death_by_Nationality, simulate.p.value = TRUE, B = 2000)
+print(chi_res_mc)
+```
+The results suggest there is a statistically significant association between climbers' nationalities and the causes of death recorded in the dataset. This means that the distribution of causes of death varies significantly across different nationalities.
+
+```{r}
+
+```
+
+
