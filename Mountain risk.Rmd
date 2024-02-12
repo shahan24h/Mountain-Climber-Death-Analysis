@@ -120,8 +120,4 @@ print(chi_res_mc)
 ```
 The results suggest there is a statistically significant association between climbers' nationalities and the causes of death recorded in the dataset. This means that the distribution of causes of death varies significantly across different nationalities.
 
-```{r}
-
-```
-
 
